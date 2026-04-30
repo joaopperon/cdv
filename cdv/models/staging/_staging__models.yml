@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: stg_clients
+    description: Cadastro de clientes deduplicado e tipado, com primeira ocorrência por created_at.
+    columns:
+      - name: client_id
+        description: Identificador único do cliente.
+        tests:
+          - not_null
+          - unique
+      - name: client_name
+        description: Nome completo do cliente.
+        tests:
+          - not_null
+      - name: city
+        description: Cidade do cliente. Pode ser nula quando ausente na origem.
+      - name: state
+        description: UF do cliente em maiúsculas.
+        tests:
+          - not_null
+      - name: created_at
+        description: Data de cadastro do cliente.
+        tests:
+          - not_null
+
+  - name: stg_transactions
+    description: Transações tipadas com filtro de registros inválidos (client_id nulo, quantidade não positiva, operação fora do domínio).
+    columns:
+      - name: transaction_id
+        description: Identificador da transação.
+        tests:
+          - not_null
+      - name: client_id
+        description: Cliente que executou a operação.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
+      - name: asset_ticker
+        description: Ticker do ativo negociado.
+        tests:
+          - not_null
+      - name: operation
+        description: Tipo da operação (BUY ou SELL).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+      - name: quantity
+        description: Quantidade negociada (sempre positiva após o filtro de staging).
+        tests:
+          - not_null
+      - name: unit_price
+        description: Preço unitário em reais.
+        tests:
+          - not_null
+      - name: transaction_date
+        description: Data da transação.
+        tests:
+          - not_null

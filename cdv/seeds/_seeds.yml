@@ -1,0 +1,20 @@
+version: 2
+
+seeds:
+  - name: clients
+    columns:
+      - name: client_id
+        tests:
+          - not_null
+
+  - name: transactions
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+      - name: operation
+        description: Tipo da operação.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']

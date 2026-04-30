@@ -1,0 +1,48 @@
+name: 'cdv'
+version: '1.0.0'
+config-version: 2
+
+profile: 'cdv'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+models:
+  cdv:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  cdv:
+    +schema: raw
+    transactions:
+      +column_types:
+        transaction_id: varchar
+        client_id: varchar
+        asset_ticker: varchar
+        operation: varchar
+        quantity: integer
+        unit_price: double
+        transaction_date: date
+    clients:
+      +column_types:
+        client_id: varchar
+        name: varchar
+        city: varchar
+        state: varchar
+        created_at: date

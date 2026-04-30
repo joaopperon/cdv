@@ -1,0 +1,105 @@
+version: 2
+
+models:
+  - name: dim_clients
+    description: Dimensão de clientes. Uma linha por client_id, deduplicada e com tipos consistentes.
+    columns:
+      - name: client_id
+        description: Identificador único do cliente.
+        tests:
+          - not_null
+          - unique
+      - name: client_name
+        description: Nome completo do cliente.
+        tests:
+          - not_null
+      - name: city
+        description: Cidade do cliente. Pode ser nula quando ausente na origem.
+      - name: state
+        description: UF do cliente em maiúsculas.
+        tests:
+          - not_null
+      - name: created_at
+        description: Data de cadastro do cliente na corretora.
+        tests:
+          - not_null
+
+  - name: fact_transactions
+    description: Tabela fato de transações, materializada como incremental por transaction_date com unique_key=transaction_id e estratégia delete+insert. Reprocessa o último dia carregado para suportar transações que cheguem atrasadas.
+    columns:
+      - name: transaction_id
+        description: Identificador único da transação.
+        tests:
+          - not_null
+          - unique
+      - name: client_id
+        description: Cliente que executou a operação.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+      - name: asset_ticker
+        description: Ticker do ativo negociado.
+        tests:
+          - not_null
+      - name: operation
+        description: Tipo da operação (BUY ou SELL).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+      - name: quantity
+        description: Quantidade negociada (sempre positiva).
+        tests:
+          - not_null
+      - name: unit_price
+        description: Preço unitário em reais.
+        tests:
+          - not_null
+      - name: gross_amount
+        description: Valor bruto da operação (quantity * unit_price).
+      - name: signed_quantity
+        description: Quantidade com sinal — positiva em BUY, negativa em SELL.
+      - name: signed_amount
+        description: Valor financeiro com sinal — positivo em BUY, negativo em SELL.
+      - name: transaction_date
+        description: Data da transação. Chave de controle do incremental.
+        tests:
+          - not_null
+
+  - name: mart_client_portfolio
+    description: Posição atual por cliente e ativo. net_quantity = BUY - SELL em quantidade; net_amount equivalente em valor financeiro. Linhas com net_quantity negativo indicam venda sem compra correspondente e são detectadas pelo teste singular assert_no_negative_position.
+    columns:
+      - name: client_id
+        description: Cliente da posição.
+        tests:
+          - not_null
+      - name: client_name
+        description: Nome do cliente (denormalizado a partir de dim_clients).
+      - name: asset_ticker
+        description: Ticker do ativo da posição.
+        tests:
+          - not_null
+      - name: total_quantity_bought
+        description: Soma das quantidades compradas (operações BUY).
+      - name: total_quantity_sold
+        description: Soma das quantidades vendidas (operações SELL).
+      - name: net_quantity
+        description: Posição líquida em quantidade (BUY - SELL).
+      - name: total_amount_bought
+        description: Soma do valor financeiro das compras.
+      - name: total_amount_sold
+        description: Soma do valor financeiro das vendas.
+      - name: net_amount
+        description: Posição líquida em valor financeiro (BUY - SELL).
+      - name: first_transaction_date
+        description: Data da primeira transação do par cliente/ativo.
+      - name: last_transaction_date
+        description: Data da última transação do par cliente/ativo.
+    tests:
+      - unique:
+          arguments:
+            column_name: "(client_id || '|' || asset_ticker)"

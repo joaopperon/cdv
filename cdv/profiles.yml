@@ -1,0 +1,7 @@
+cdv:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: cdv.duckdb
+      threads: 4

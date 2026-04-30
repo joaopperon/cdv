@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: int_transactions
+    description: Transações deduplicadas com colunas derivadas signed_quantity e signed_amount geradas via macro signed_quantity. Fonte canônica para fact_transactions.
+    columns:
+      - name: transaction_id
+        description: Identificador da transação. Único após deduplicação.
+        tests:
+          - not_null
+          - unique
+      - name: client_id
+        description: Cliente da transação.
+        tests:
+          - not_null
+      - name: asset_ticker
+        description: Ticker do ativo negociado.
+        tests:
+          - not_null
+      - name: operation
+        description: Tipo da operação (BUY ou SELL).
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+      - name: quantity
+        description: Quantidade negociada (sempre positiva).
+      - name: unit_price
+        description: Preço unitário em reais.
+      - name: gross_amount
+        description: Valor bruto da operação (quantity * unit_price), sempre positivo.
+      - name: signed_quantity
+        description: Quantidade com sinal — positiva em BUY, negativa em SELL.
+      - name: signed_amount
+        description: Valor financeiro com sinal — positivo em BUY, negativo em SELL.
+      - name: transaction_date
+        description: Data da transação.
+        tests:
+          - not_null
